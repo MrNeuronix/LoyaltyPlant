@@ -63,6 +63,9 @@ public class AccountController {
 	public Object removeAccount(@RequestBody AccountRemoveRequest request) {
 		long start = System.currentTimeMillis();
 
+		if(request.getNumber() == null)
+			return new ErrorStatus("Empty account passed");
+
 		try {
 			service.removeAccount(request.getNumber());
 		} catch (AccountNotFoundException e) {

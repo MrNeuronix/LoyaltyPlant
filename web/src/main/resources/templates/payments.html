@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Loyalty Plant Processing</title>
+
+    <!-- Bootstrap -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/css/main.css" rel='stylesheet' type='text/css'/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css" rel='stylesheet' type='text/css'/>
+    <link rel="stylesheet" type="text/css" href="/css/datatables.min.css"/>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/jquery.noty.packaged.min.js"></script>
+    <script type="text/javascript" src="/js/datatables.min.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="row">
+
+        <p></p>
+        <h1 th:inline="text">Payments for [[${number}]]</h1>
+        <p> </p>
+            <a href="/" class="btn btn-primary">
+                <span class="glyphicon glyphicon-repeat"></span>
+                Back
+            </a>
+        <p> </p>
+
+        <div class="col-md-10 col-md-offset-1">
+
+                    <table id="accounts" class="table table-striped table-bordered table-list">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Operation</th>
+                            <th>Amount</th>
+                            <th>From/To</th>
+                        </tr>
+                        </thead>
+                        <tfoot>
+                        <tr>
+                            <th>Date</th>
+                            <th>Operation</th>
+                            <th>Amount</th>
+                            <th>From/To</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+        </div>
+    </div>
+
+    <br/><br/>
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <div class="input-group">
+                <input type="text" id="addMoneyAmount" class="form-control" placeholder="Enter amount"/>
+                <span class="input-group-btn">
+                            <button type="button" class="btn btn-primary" id="addMoney">
+                                <span class="glyphicon glyphicon-ok"></span>
+                                Add money
+                            </button>
+                 </span>
+            </div>
+        </div>
+    </div>
+
+    <br/><br/>
+
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <div class="input-group">
+                <input type="text" id="removeMoneyAmount" class="form-control" placeholder="Enter amount"/>
+                <span class="input-group-btn">
+                            <button type="button" class="btn btn-danger" id="removeMoney">
+                                <span class="glyphicon glyphicon-remove"></span>
+                                Remove money
+                            </button>
+                 </span>
+            </div>
+        </div>
+    </div>
+
+    <br/><br/>
+
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+
+            <form>
+            <div class="form-group">
+                <label for="destination">Destination:</label>
+                <input type="text" class="form-control" id="destination" placeholder="Enter destination account number for transfer"/>
+            </div>
+            <div class="form-group">
+                <label for="amount">Amount:</label>
+                <input type="text" class="form-control" id="amount" placeholder="Amount"/>
+            </div>
+            <button type="button" class="btn btn-warning" id="transfer">
+                <span class="glyphicon glyphicon-envelope"></span>
+                Transfer
+            </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        var accountsTable = $('#accounts').DataTable( {
+                                     "processing": true,
+                                     "ajax":{
+                                         "url" : "/api/processing/history",
+                                         "type" : "POST",
+                                         "dataType": "json",
+                                         "contentType": "application/json",
+                                         data: function (data) {
+                                             return JSON.stringify({"number" : [[${number}]]});
+                                         }
+                                     },
+                                     "columnDefs": [
+                                          {
+                                             "render": function ( data, type, row ) {
+                                                 if(data == "PLUS") {
+                                                     return '<font color="green"><b>DEBIT</b></font>';
+                                                 }
+                                                 else if(data == "MINUS") {
+                                                     return '<font color="red"><b>CREDIT</b></font>';
+                                                 }
+                                                 else if(data == "TRANSFER_PLUS") {
+                                                     return '<font color="green"><b>INCOME TRANSFER</b></font>';
+                                                 }
+                                                 else if(data == "TRANSFER_MINUS") {
+                                                     return '<font color="red"><b>OUTCOME TRANSFER</b></font>';
+                                                 }
+                                                 else {
+                                                     return 'UNKNOWN';
+                                                 }
+                                              },
+                                              "targets": 1
+                                          },
+                                         {
+                                             "render": function ( data, type, row ) {
+                                                 if(data != null) {
+                                                     return '<a href="/payments/' + data + '">' + data + '</a>';
+                                                 }
+                                                 else {
+                                                     return "";
+                                                 }
+                                             },
+                                             "targets": 3
+                                         }
+                                      ],
+                                     "columns": [
+                                         { "data": "date" },
+                                         { "data": "type" },
+                                         { "data": "change" },
+                                         { "data": "otherSide" }
+                                     ]
+                                 } );
+
+        var transfer = $("#transfer");
+        var destination = $("#destination");
+        var amount = $("#amount");
+
+        var addMoneyAmount = $("#addMoneyAmount");
+        var addMoney = $("#addMoney");
+
+        var removeMoneyAmount = $("#removeMoneyAmount");
+        var removeMoney = $("#removeMoney");
+
+        transfer.on('click', function (){
+
+            destination.attr("disabled", true);
+            amount.attr("disabled", true);
+
+            if(destination.val().length > 0 && amount.val().length > 0 ) {
+                $.ajax({
+                           type: "POST",
+                           url: "/api/processing/transfer",
+                           dataType: "json",
+                           contentType: "application/json",
+                           data: JSON.stringify({
+                                                    number: [[${number}]],
+                                                    to: destination.val(),
+                                                    amount: amount.val()
+                                                }),
+                           success: function (data) {
+                               destination.attr("disabled", false);
+                               amount.attr("disabled", false);
+
+                               if(data.status == "OK") {
+
+                                   accountsTable.ajax.reload();
+                                   destination.val("");
+                                   amount.val("");
+
+                                   noty({
+                                            layout: 'bottomCenter',
+                                            text: 'Transfer finished. Taked ' + data.time + 'ms',
+                                            type: 'success'
+                                        });
+                               }
+                               else {
+                                   noty({
+                                            layout: 'bottomCenter',
+                                            text: 'Something goes wrong',
+                                            type: 'error'
+                                        });
+                               }
+                           },
+                           error: function (data) {
+                               destination.attr("disabled", false);
+                               amount.attr("disabled", false);
+
+                               noty({
+                                        layout: 'bottomCenter',
+                                        text: 'Something goes wrong',
+                                        type: 'error'
+                                    });
+                           }
+                       });
+            }
+            else {
+                noty({
+                         layout: 'bottomCenter',
+                         text: 'Empty name passed',
+                         type: 'error'
+                     });
+                destination.attr("disabled", false);
+                amount.attr("disabled", false);
+            }
+        });
+
+        addMoney.on('click', function (){
+
+            addMoneyAmount.attr("disabled", true);
+            addMoney.attr("disabled", true);
+
+            if(addMoneyAmount.val().length > 0 ) {
+                $.ajax({
+                           type: "POST",
+                           url: "/api/processing/plus",
+                           dataType: "json",
+                           contentType: "application/json",
+                           data: JSON.stringify({
+                                                    number: [[${number}]],
+                                                    amount: addMoneyAmount.val()
+                                                }),
+                           success: function (data) {
+                               addMoneyAmount.attr("disabled", false);
+                               addMoney.attr("disabled", false);
+
+                               if(data.status == "OK") {
+
+                                   accountsTable.ajax.reload();
+                                   addMoneyAmount.val("");
+
+                                   noty({
+                                            layout: 'bottomCenter',
+                                            text: 'Money added. Taked ' + data.time + 'ms',
+                                            type: 'success'
+                                        });
+                               }
+                               else {
+                                   noty({
+                                            layout: 'bottomCenter',
+                                            text: 'Something goes wrong',
+                                            type: 'error'
+                                        });
+                               }
+                           },
+                           error: function (data) {
+                               addMoneyAmount.attr("disabled", false);
+                               addMoney.attr("disabled", false);
+
+                               noty({
+                                        layout: 'bottomCenter',
+                                        text: 'Something goes wrong',
+                                        type: 'error'
+                                    });
+                           }
+                       });
+            }
+            else {
+                noty({
+                         layout: 'bottomCenter',
+                         text: 'Empty name passed',
+                         type: 'error'
+                     });
+                addMoneyAmount.attr("disabled", false);
+                addMoney.attr("disabled", false);
+            }
+        });
+
+        removeMoney.on('click', function (){
+
+            removeMoneyAmount.attr("disabled", true);
+            removeMoney.attr("disabled", true);
+
+            if(removeMoneyAmount.val().length > 0 ) {
+                $.ajax({
+                           type: "POST",
+                           url: "/api/processing/minus",
+                           dataType: "json",
+                           contentType: "application/json",
+                           data: JSON.stringify({
+                                                    number: [[${number}]],
+                                                    amount: removeMoneyAmount.val()
+                                                }),
+                           success: function (data) {
+                               removeMoneyAmount.attr("disabled", false);
+                               removeMoney.attr("disabled", false);
+
+                               if(data.status == "OK") {
+
+                                   accountsTable.ajax.reload();
+                                   removeMoneyAmount.val("");
+
+                                   noty({
+                                            layout: 'bottomCenter',
+                                            text: 'Money removed. Taked ' + data.time + 'ms',
+                                            type: 'success'
+                                        });
+                               }
+                               else {
+                                   noty({
+                                            layout: 'bottomCenter',
+                                            text: 'Something goes wrong',
+                                            type: 'error'
+                                        });
+                               }
+                           },
+                           error: function (data) {
+                               removeMoneyAmount.attr("disabled", false);
+                               removeMoney.attr("disabled", false);
+
+                               noty({
+                                        layout: 'bottomCenter',
+                                        text: 'Something goes wrong',
+                                        type: 'error'
+                                    });
+                           }
+                       });
+            }
+            else {
+                noty({
+                         layout: 'bottomCenter',
+                         text: 'Empty name passed',
+                         type: 'error'
+                     });
+                removeMoneyAmount.attr("disabled", false);
+                removeMoney.attr("disabled", false);
+            }
+        });
+    } );
+    /*]]>*/
+</script>
+
+</body>
+</html>

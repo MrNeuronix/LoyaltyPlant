@@ -2,14 +2,14 @@ package ru.poliscam.web.model.status;
 
 public class OkStatus {
 
-	private Object result;
+	private Object data;
 	private Long time;
 
 	public OkStatus() {
 	}
 
-	public OkStatus(Object text, Long time) {
-		this.result = text;
+	public OkStatus(Object data, Long time) {
+		this.data = data;
 		this.time = time;
 	}
 
@@ -17,12 +17,12 @@ public class OkStatus {
 		return "OK";
 	}
 
-	public Object getResult() {
-		return result;
+	public Object getData() {
+		return data;
 	}
 
-	public void setResult(Object text) {
-		this.result = text;
+	public void setData(Object data) {
+		this.data = data;
 	}
 
 	public Long getTime() {

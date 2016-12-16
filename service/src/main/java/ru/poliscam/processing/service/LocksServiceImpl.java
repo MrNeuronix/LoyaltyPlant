@@ -15,7 +15,6 @@ public class LocksServiceImpl implements LocksService {
 
 	// Т.к. блокировки на уровне базе запрещены по условию,
 	// реализуем этот функционал на уровне приложения.
-	// 128 - минимальное кол-во локов
 	private final Striped<ReadWriteLock> locks = Striped.lazyWeakReadWriteLock(2);
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 

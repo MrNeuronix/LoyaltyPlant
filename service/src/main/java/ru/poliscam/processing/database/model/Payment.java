@@ -1,5 +1,8 @@
 package ru.poliscam.processing.database.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 
@@ -21,6 +24,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import ru.poliscam.processing.database.enums.PaymentType;
+import ru.poliscam.processing.serialization.MoneySerialize;
 
 @Entity
 @Table(name = "payments")
@@ -32,6 +36,7 @@ public class Payment {
 
 	@CreationTimestamp
 	@Temporal(TemporalType.TIMESTAMP)
+	@JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
 	private Date date;
 
 	// Аккаунт платежа
@@ -50,6 +55,7 @@ public class Payment {
 
 	// Изменение баланса
 	@Column(name = "balancechange", precision = 19, scale = 2, nullable = false)
+	@JsonSerialize(using = MoneySerialize.class)
 	private BigDecimal change;
 
 	public Payment() {

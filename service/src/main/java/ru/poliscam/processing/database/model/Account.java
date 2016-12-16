@@ -1,9 +1,9 @@
 package ru.poliscam.processing.database.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
@@ -21,6 +21,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
+import ru.poliscam.processing.serialization.MoneySerialize;
+
 @Entity
 @Table(name = "accounts")
 public class Account {
@@ -37,6 +39,7 @@ public class Account {
 
 	// Текущий баланс
 	@Column(name = "balance", precision = 19, scale = 2, nullable = false)
+	@JsonSerialize(using = MoneySerialize.class)
 	private BigDecimal balance;
 
 	// Платежи и переводы с этого аккаунта
