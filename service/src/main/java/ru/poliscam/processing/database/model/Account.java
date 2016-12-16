@@ -1,5 +1,7 @@
 package ru.poliscam.processing.database.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
@@ -16,6 +18,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
 @Entity
@@ -37,9 +40,11 @@ public class Account {
 	private BigDecimal balance;
 
 	// Платежи и переводы с этого аккаунта
-	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "account")
+	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "account", orphanRemoval = true)
 	@BatchSize(size = 100)
-	private transient Set<Payment> payments = new HashSet<>();
+	@OrderBy("date DESC")
+	@JsonIgnore
+	private Set<Payment> payments = new HashSet<>();
 
 	public Account() {
 	}

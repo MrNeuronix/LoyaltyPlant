@@ -11,8 +11,10 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -33,7 +35,8 @@ public class Payment {
 	private Date date;
 
 	// Аккаунт платежа
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "account_number")
 	private Account account;
 
 	// Тип изменения баланса
@@ -41,7 +44,7 @@ public class Payment {
 	private PaymentType type = PaymentType.UNKNOWN;
 
 	// Если тип == TRANSFER, то тут указывается UUID аккаунта, куда/откуда ушли/пришли деньги
-	@Column(name = "number", columnDefinition = "CHAR(36)")
+	@Column(name = "otherSide", columnDefinition = "CHAR(36)")
 	@Type(type="uuid-char")
 	private UUID otherSide;
 
@@ -105,6 +108,39 @@ public class Payment {
 
 	public void setChange(BigDecimal change) {
 		this.change = change;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+
+		Payment payment = (Payment) o;
+
+		if (id != payment.id)
+			return false;
+		if (date != null ? !date.equals(payment.date) : payment.date != null)
+			return false;
+		if (account != null ? !account.equals(payment.account) : payment.account != null)
+			return false;
+		if (type != payment.type)
+			return false;
+		if (otherSide != null ? !otherSide.equals(payment.otherSide) : payment.otherSide != null)
+			return false;
+		return change != null ? change.equals(payment.change) : payment.change == null;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = (int) (id ^ (id >>> 32));
+		result = 31 * result + (date != null ? date.hashCode() : 0);
+		result = 31 * result + (account != null ? account.hashCode() : 0);
+		result = 31 * result + (type != null ? type.hashCode() : 0);
+		result = 31 * result + (otherSide != null ? otherSide.hashCode() : 0);
+		result = 31 * result + (change != null ? change.hashCode() : 0);
+		return result;
 	}
 
 	@Override

@@ -1,14 +1,23 @@
 package ru.poliscam.web.controllers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 
 import ru.poliscam.processing.database.model.Account;
+import ru.poliscam.processing.database.model.Payment;
 import ru.poliscam.processing.service.AccountService;
 import ru.poliscam.processing.service.ProcessingService;
 import ru.poliscam.processing.service.exceptions.AccountNameRequiredException;
@@ -19,6 +28,7 @@ import ru.poliscam.processing.service.exceptions.UnknownPaymentTypeException;
 import ru.poliscam.web.model.AccountAddRequest;
 import ru.poliscam.web.model.AccountRemoveRequest;
 import ru.poliscam.web.model.BalanceRequest;
+import ru.poliscam.web.model.HistoryRequest;
 import ru.poliscam.web.model.ProcessingRequest;
 import ru.poliscam.web.model.status.ErrorStatus;
 import ru.poliscam.web.model.status.OkStatus;
@@ -27,6 +37,7 @@ import ru.poliscam.web.model.status.OkStatus;
 public class ProcessingController {
 
 	private final ProcessingService service;
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
 	public ProcessingController(ProcessingService service)	{
@@ -145,6 +156,34 @@ public class ProcessingController {
 		}
 
 		return new OkStatus(balance, System.currentTimeMillis()-start);
+	}
+
+	/**
+	 * Получить историю транзакций по счету
+	 *
+	 * @param request запрос
+	 * @return история транзакций
+	 */
+	@RequestMapping(value = "/api/processing/history", method = RequestMethod.POST)
+	public Object payments(@RequestBody HistoryRequest request) {
+		long start = System.currentTimeMillis();
+		Collection<Payment> payments;
+
+		try {
+			payments = service.getPayments(request.getNumber());
+		} catch (AccountNotFoundException e) {
+			return new ErrorStatus("Account not found");
+		}
+
+		return new OkStatus(payments, System.currentTimeMillis()-start);
+	}
+
+	@ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class})
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	@ResponseBody
+	public ErrorStatus resolveException() {
+		logger.error("Error happens");
+		return new ErrorStatus("something goes wrong");
 	}
 
 }

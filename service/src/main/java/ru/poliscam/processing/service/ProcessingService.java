@@ -1,8 +1,10 @@
 package ru.poliscam.processing.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.UUID;
 
+import ru.poliscam.processing.database.model.Payment;
 import ru.poliscam.processing.service.exceptions.AccountNotFoundException;
 import ru.poliscam.processing.service.exceptions.DestinationAccountRequiredException;
 import ru.poliscam.processing.service.exceptions.InsufficientMoneyException;
@@ -22,5 +24,7 @@ public interface ProcessingService {
 	                                                                     DestinationAccountRequiredException,
 	                                                                     UnknownPaymentTypeException,
 	                                                                     InsufficientMoneyException;
+
+	Collection<Payment> getPayments(UUID number) throws AccountNotFoundException;
 
 }

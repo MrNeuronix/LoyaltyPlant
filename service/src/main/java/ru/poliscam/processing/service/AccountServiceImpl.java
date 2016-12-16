@@ -3,6 +3,7 @@ package ru.poliscam.processing.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.UUID;
 
 import ru.poliscam.processing.database.dao.AccountDAO;
@@ -49,5 +50,10 @@ public class AccountServiceImpl implements AccountService {
 		finally {
 			locksService.writeUnlock(number);
 		}
+	}
+
+	@Override
+	public Collection<Account> allAccounts() {
+		return  (Collection<Account>) accountDAO.findAll();
 	}
 }

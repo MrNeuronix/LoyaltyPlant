@@ -1,12 +1,12 @@
 package ru.poliscam.processing.service;
 
-import com.google.common.util.concurrent.Striped;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.UUID;
 
 import ru.poliscam.processing.database.dao.AccountDAO;
@@ -77,6 +77,19 @@ public class ProcessingServiceImpl implements ProcessingService {
 		return processMoney(from, PaymentType.TRANSFER, to, amount);
 	}
 
+	@Override
+	public Collection<Payment> getPayments(UUID number) throws AccountNotFoundException {
+		locksService.readLock(number);
+
+		try {
+			Account account = accountDAO.findByNumber(number);
+			return account.getPayments();
+		}
+		finally {
+			locksService.readUnlock(number);
+		}
+	}
+
 	// Сервисный метод, реализующий операции со счетом
 	@Transactional(rollbackFor = Exception.class)
 	private BigDecimal processMoney(UUID number, PaymentType type, UUID to, BigDecimal amount)
@@ -84,15 +97,14 @@ public class ProcessingServiceImpl implements ProcessingService {
 			       InsufficientMoneyException {
 
 		// Получаем блокировку на запись
-		locksService.writeLock(number);
-
-		// Если передаем деньги на другой аккаунт, блокирует его тоже
-		if(type.equals(PaymentType.TRANSFER)) {
-			locksService.writeLock(to);
+		// Если передаем деньги на другой аккаунт, блокируем его тоже
+		if(type.equals(PaymentType.TRANSFER) && to != null) {
+			locksService.bulkWriteLock(Arrays.asList(number, to));
 		}
+		else
+			locksService.writeLock(number);
 
 		try {
-
 			Account account = accountDAO.findByNumber(number);
 			Account toAccount;
 
@@ -150,11 +162,10 @@ public class ProcessingServiceImpl implements ProcessingService {
 			return account.getBalance();
 		}
 		finally	{
-			locksService.writeUnlock(number);
-
-			if(to != null) {
-				locksService.writeUnlock(to);
-			}
+			if(type.equals(PaymentType.TRANSFER_MINUS) && to != null)
+				locksService.bulkWriteUnlock(Arrays.asList(to, number));
+			else
+				locksService.writeUnlock(number);
 		}
 	}
 }
