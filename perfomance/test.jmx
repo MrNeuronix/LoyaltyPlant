@@ -27,15 +27,15 @@
         <stringProp name="checkQuery">Select 1</stringProp>
         <stringProp name="connectionAge">5000</stringProp>
         <stringProp name="dataSource">db</stringProp>
-        <stringProp name="dbUrl">jdbc:mysql://localhost:3306/test</stringProp>
+        <stringProp name="dbUrl">jdbc:mysql://test.poliscam.ru:3306/lp</stringProp>
         <stringProp name="driver">com.mysql.jdbc.Driver</stringProp>
         <boolProp name="keepAlive">true</boolProp>
-        <stringProp name="password">test</stringProp>
+        <stringProp name="password">testtesttest</stringProp>
         <stringProp name="poolMax">10</stringProp>
         <stringProp name="timeout">10000</stringProp>
         <stringProp name="transactionIsolation">DEFAULT</stringProp>
         <stringProp name="trimInterval">60000</stringProp>
-        <stringProp name="username">root</stringProp>
+        <stringProp name="username">lpuser</stringProp>
       </JDBCDataSource>
       <hashTree/>
       <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Data Set Config" enabled="true">
@@ -53,8 +53,8 @@
         <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
           <collectionProp name="Arguments.arguments"/>
         </elementProp>
-        <stringProp name="HTTPSampler.domain">localhost</stringProp>
-        <stringProp name="HTTPSampler.port">9000</stringProp>
+        <stringProp name="HTTPSampler.domain">test.poliscam.ru</stringProp>
+        <stringProp name="HTTPSampler.port">80</stringProp>
         <stringProp name="HTTPSampler.connect_timeout"></stringProp>
         <stringProp name="HTTPSampler.response_timeout"></stringProp>
         <stringProp name="HTTPSampler.protocol">http</stringProp>
@@ -676,7 +676,7 @@
         </JDBCPreProcessor>
         <hashTree/>
         <GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="pause" enabled="true">
-          <stringProp name="ConstantTimer.delay">${OFFSET}</stringProp>
+          <stringProp name="ConstantTimer.delay">2000</stringProp>
           <stringProp name="RandomTimer.range">${TIMER}</stringProp>
         </GaussianRandomTimer>
         <hashTree/>
@@ -720,7 +720,7 @@
           <hashTree/>
           <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get balance answer" enabled="true">
             <stringProp name="JSONPostProcessor.referenceNames">balance</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.result</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.data</stringProp>
             <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
           </JSONPostProcessor>
           <hashTree/>
