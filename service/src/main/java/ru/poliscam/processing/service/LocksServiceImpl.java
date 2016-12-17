@@ -15,17 +15,23 @@ public class LocksServiceImpl implements LocksService {
 
 	// Т.к. блокировки на уровне базе запрещены по условию,
 	// реализуем этот функционал на уровне приложения.
-	private final Striped<ReadWriteLock> locks = Striped.lazyWeakReadWriteLock(2);
+	// Блокировки - lazy weak, поэтому могут быть собраны GC, когда будут не нужны
+	// 256 stripes выбрано с запасом, ожидаемый уровень конкурентных запросов - не более 100
+	private final Striped<ReadWriteLock> locks = Striped.lazyWeakReadWriteLock(256);
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Override
 	public void writeLock(UUID number) {
+		logger.info("Get write lock on {}", number);
 		locks.get(number).writeLock().lock();
+		logger.info("Lock on {} getted!", number);
 	}
 
 	@Override
 	public void writeUnlock(UUID number) {
+		logger.info("Unlocking {}", number);
 		locks.get(number).writeLock().unlock();
+		logger.info("Lock on {} released!", number);
 	}
 
 	@Override
