@@ -8,9 +8,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import java.math.BigDecimal;
 
-/**
- * Created by nix on 16.12.2016.
- */
 public class MoneySerialize extends JsonSerializer<BigDecimal> {
 
 	@Override
