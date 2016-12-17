@@ -83,6 +83,10 @@ public class ProcessingServiceImpl implements ProcessingService {
 
 		try {
 			Account account = accountDAO.findByNumber(number);
+
+			if(account == null)
+				throw new AccountNotFoundException();
+
 			return account.getPayments();
 		}
 		finally {
