@@ -22,16 +22,12 @@ public class LocksServiceImpl implements LocksService {
 
 	@Override
 	public void writeLock(UUID number) {
-		logger.info("Get write lock on {}", number);
 		locks.get(number).writeLock().lock();
-		logger.info("Lock on {} getted!", number);
 	}
 
 	@Override
 	public void writeUnlock(UUID number) {
-		logger.info("Unlocking {}", number);
 		locks.get(number).writeLock().unlock();
-		logger.info("Lock on {} released!", number);
 	}
 
 	@Override
@@ -46,15 +42,11 @@ public class LocksServiceImpl implements LocksService {
 
 	@Override
 	public void bulkWriteLock(Collection<UUID> numbers) {
-		logger.info("Get write lock on {}", numbers);
 		locks.bulkGet(numbers).forEach(lock -> lock.writeLock().lock());
-		logger.info("Lock on {} getted!", numbers);
 	}
 
 	@Override
 	public void bulkWriteUnlock(Collection<UUID> numbers) {
-		logger.info("Get write unlock on {}", numbers);
 		locks.bulkGet(numbers).forEach(lock -> lock.writeLock().unlock());
-		logger.info("Released write unlock on {}", numbers);
 	}
 }

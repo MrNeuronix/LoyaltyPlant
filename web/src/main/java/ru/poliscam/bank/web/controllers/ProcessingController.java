@@ -13,9 +13,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collection;
 
+import javax.servlet.http.HttpServletRequest;
+
+import ru.poliscam.bank.processing.database.enums.PaymentType;
 import ru.poliscam.bank.processing.database.model.Payment;
+import ru.poliscam.bank.processing.service.LocksService;
 import ru.poliscam.bank.processing.service.ProcessingService;
 import ru.poliscam.bank.processing.service.exceptions.AccountNotFoundException;
 import ru.poliscam.bank.processing.service.exceptions.DestinationAccountRequiredException;
@@ -31,11 +36,14 @@ import ru.poliscam.bank.web.model.status.OkStatus;
 public class ProcessingController {
 
 	private final ProcessingService service;
+	private final LocksService locksService;
+
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
-	public ProcessingController(ProcessingService service)	{
+	public ProcessingController(ProcessingService service, LocksService locksService)	{
 		this.service = service;
+		this.locksService = locksService;
 	}
 
 	/**
@@ -49,10 +57,22 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		BigDecimal balance;
 
+		// Получаем блокировку
+		// Тут спорный момент - нужна ли блокировка на чтение, чтобы получить актуальную запись, если во время запроса
+		// идет изменение баланса
+		// В плюсах - актуальность данных, в минусах - снижение производительности от лишней блокировки
+		// Будем считать, что по условиям задачи у нас критичная часть банка и актуальность данных имеет приоритет выше.
+		locksService.readLock(request.getNumber());
+
 		try {
-			balance = service.getBalance(request.getNumber());
-		} catch (AccountNotFoundException e) {
-			return new ErrorStatus("Account not found");
+			try {
+				balance = service.getBalance(request.getNumber());
+			} catch (AccountNotFoundException e) {
+				return new ErrorStatus("Account not found");
+			}
+		}
+		finally	{
+			locksService.readUnlock(request.getNumber());
 		}
 
 		// Если приключилась какая то беда, вроде rollback
@@ -74,14 +94,21 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		BigDecimal balance = null;
 
+		// Получаем блокировку на запись
+		locksService.writeLock(request.getNumber());
 		try {
-			balance = service.addMoney(request.getNumber(), request.getAmount());
-		} catch (AccountNotFoundException e) {
-			return new ErrorStatus("Account not found");
-		} catch (InsufficientMoneyException e) {
-			return new ErrorStatus("Insufficient money");
-		} catch (DestinationAccountRequiredException | UnknownPaymentTypeException e) {
-			// ignored
+			try {
+				balance = service.addMoney(request.getNumber(), request.getAmount());
+			} catch (AccountNotFoundException e) {
+				return new ErrorStatus("Account not found");
+			} catch (InsufficientMoneyException e) {
+				return new ErrorStatus("Insufficient money");
+			} catch (DestinationAccountRequiredException | UnknownPaymentTypeException e) {
+				// ignored
+			}
+		}
+		finally {
+			locksService.writeUnlock(request.getNumber());
 		}
 
 		// Если приключилась какая то беда, вроде rollback
@@ -103,14 +130,21 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		BigDecimal balance = null;
 
+		// Получаем блокировку на запись
+		locksService.writeLock(request.getNumber());
 		try {
-			balance = service.spentMoney(request.getNumber(), request.getAmount());
-		} catch (AccountNotFoundException e) {
-			return new ErrorStatus("Account not found");
-		} catch (InsufficientMoneyException e) {
-			return new ErrorStatus("Insufficient money");
-		} catch (DestinationAccountRequiredException | UnknownPaymentTypeException e) {
-			// ignored
+			try {
+				balance = service.spentMoney(request.getNumber(), request.getAmount());
+			} catch (AccountNotFoundException e) {
+				return new ErrorStatus("Account not found");
+			} catch (InsufficientMoneyException e) {
+				return new ErrorStatus("Insufficient money");
+			} catch (DestinationAccountRequiredException | UnknownPaymentTypeException e) {
+				// ignored
+			}
+		}
+		finally {
+			locksService.writeUnlock(request.getNumber());
 		}
 
 		// Если приключилась какая то беда, вроде rollback
@@ -132,16 +166,24 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		BigDecimal balance;
 
+		// Получаем блокировку на запись
+		// Т.к. передаем деньги на другой аккаунт, блокируем его тоже
+		locksService.bulkWriteLock(Arrays.asList(request.getNumber(), request.getTo()));
 		try {
-			balance = service.transferMoney(request.getNumber(), request.getTo(), request.getAmount());
-		} catch (AccountNotFoundException e) {
-			return new ErrorStatus("Account not found");
-		} catch (InsufficientMoneyException e) {
-			return new ErrorStatus("Insufficient money");
-		} catch (UnknownPaymentTypeException e) {
-			return new ErrorStatus("Something goes wrong");
-		} catch (DestinationAccountRequiredException e) {
-			return new ErrorStatus("Destination account does not specified");
+			try {
+				balance = service.transferMoney(request.getNumber(), request.getTo(), request.getAmount());
+			} catch (AccountNotFoundException e) {
+				return new ErrorStatus("Account not found");
+			} catch (InsufficientMoneyException e) {
+				return new ErrorStatus("Insufficient money");
+			} catch (UnknownPaymentTypeException e) {
+				return new ErrorStatus("Something goes wrong");
+			} catch (DestinationAccountRequiredException e) {
+				return new ErrorStatus("Destination account does not specified");
+			}
+		}
+		finally {
+			locksService.bulkWriteUnlock(Arrays.asList(request.getNumber(), request.getTo()));
 		}
 
 		// Если приключилась какая то беда, вроде rollback
@@ -163,10 +205,17 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		Collection<Payment> payments;
 
+		locksService.readLock(request.getNumber());
+
 		try {
-			payments = service.getPayments(request.getNumber());
-		} catch (AccountNotFoundException e) {
-			return new ErrorStatus("Account not found");
+			try {
+				payments = service.getPayments(request.getNumber());
+			} catch (AccountNotFoundException e) {
+				return new ErrorStatus("Account not found");
+			}
+		}
+		finally	{
+			locksService.readUnlock(request.getNumber());
 		}
 
 		return new OkStatus(payments, System.currentTimeMillis()-start);
@@ -175,9 +224,9 @@ public class ProcessingController {
 	@ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class})
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	@ResponseBody
-	public ErrorStatus resolveException() {
-		logger.error("Error happens");
-		return new ErrorStatus("something goes wrong");
+	public ErrorStatus resolveException(HttpServletRequest req, Exception ex) {
+		logger.error("Error: {}", ex.getLocalizedMessage());
+		return new ErrorStatus(ex.getLocalizedMessage());
 	}
 
 }

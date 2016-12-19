@@ -24,91 +24,70 @@ public class ProcessingServiceImpl implements ProcessingService {
 
 	private final AccountDAO accountDAO;
 	private final PaymentDAO paymentDAO;
-	private final LocksService locksService;
 
 	@Autowired
-	public ProcessingServiceImpl(AccountDAO accountDAO, PaymentDAO paymentDAO, LocksService locksService) {
+	public ProcessingServiceImpl(AccountDAO accountDAO, PaymentDAO paymentDAO) {
 		this.accountDAO = accountDAO;
 		this.paymentDAO = paymentDAO;
-		this.locksService = locksService;
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public BigDecimal getBalance(UUID number) throws AccountNotFoundException {
 
-		// Получаем блокировку
-		// Тут спорный момент - нужна ли блокировка на чтение, чтобы получить актуальную запись, если во время запроса
-		// идет изменение баланса
-		// В плюсах - актуальность данных, в минусах - снижение производительности от лишней блокировки
-		// Будем считать, что по условиям задачи у нас критичная часть банка и актуальность данных имеет приоритет выше.
-		locksService.readLock(number);
+		Account account = accountDAO.findByNumber(number);
 
-		try {
-			Account account = accountDAO.findByNumber(number);
+		if(account == null)
+			throw new AccountNotFoundException();
 
-			if(account == null)
-				throw new AccountNotFoundException();
-
-			return account.getBalance();
-		}
-		finally	{
-			locksService.readUnlock(number);
-		}
+		return account.getBalance();
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public BigDecimal addMoney(UUID number, BigDecimal amount)
 			throws AccountNotFoundException, DestinationAccountRequiredException, UnknownPaymentTypeException,
 			       InsufficientMoneyException {
+
 		return processMoney(number, PaymentType.PLUS, null, amount);
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public BigDecimal spentMoney(UUID number, BigDecimal amount)
 			throws AccountNotFoundException, DestinationAccountRequiredException, UnknownPaymentTypeException,
 			       InsufficientMoneyException{
+
 		return processMoney(number, PaymentType.MINUS, null, amount);
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public BigDecimal transferMoney(UUID from, UUID to, BigDecimal amount)
 			throws AccountNotFoundException, DestinationAccountRequiredException, UnknownPaymentTypeException,
 			       InsufficientMoneyException {
-		return processMoney(from, PaymentType.TRANSFER, to, amount);
+
+			return processMoney(from, PaymentType.TRANSFER, to, amount);
+
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Collection<Payment> getPayments(UUID number) throws AccountNotFoundException {
-		locksService.readLock(number);
 
-		try {
-			Account account = accountDAO.findByNumber(number);
+		Account account = accountDAO.findByNumber(number);
 
-			if(account == null)
-				throw new AccountNotFoundException();
+		if(account == null)
+			throw new AccountNotFoundException();
 
-			return account.getPayments();
-		}
-		finally {
-			locksService.readUnlock(number);
-		}
+		return account.getPayments();
 	}
 
 	// Сервисный метод, реализующий операции со счетом
-	@Transactional(rollbackFor = Exception.class)
 	private BigDecimal processMoney(UUID number, PaymentType type, UUID to, BigDecimal amount)
 			throws AccountNotFoundException, DestinationAccountRequiredException, UnknownPaymentTypeException,
 			       InsufficientMoneyException {
 
-		// Получаем блокировку на запись
-		// Если передаем деньги на другой аккаунт, блокируем его тоже
-		if(type.equals(PaymentType.TRANSFER) && to != null) {
-			locksService.bulkWriteLock(Arrays.asList(number, to));
-		}
-		else
-			locksService.writeLock(number);
-
-		try {
 			Account account = accountDAO.findByNumber(number);
 			Account toAccount;
 
@@ -164,12 +143,5 @@ public class ProcessingServiceImpl implements ProcessingService {
 				accountDAO.save(toAccount);
 
 			return account.getBalance();
-		}
-		finally	{
-			if(type.equals(PaymentType.TRANSFER_MINUS) && to != null)
-				locksService.bulkWriteUnlock(Arrays.asList(to, number));
-			else
-				locksService.writeUnlock(number);
-		}
 	}
 }
