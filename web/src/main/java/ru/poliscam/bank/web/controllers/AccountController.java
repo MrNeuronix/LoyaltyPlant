@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
+
 import ru.poliscam.bank.processing.database.model.Account;
 import ru.poliscam.bank.processing.service.AccountService;
 import ru.poliscam.bank.processing.service.exceptions.AccountNameRequiredException;
@@ -88,8 +90,8 @@ public class AccountController {
 	@ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class})
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	@ResponseBody
-	public ErrorStatus resolveException() {
-		logger.error("Error happens");
-		return new ErrorStatus("something goes wrong");
+	public ErrorStatus resolveException(HttpServletRequest req, Exception ex) {
+		logger.error("Error: {}", ex.getLocalizedMessage());
+		return new ErrorStatus(ex.getLocalizedMessage());
 	}
 }

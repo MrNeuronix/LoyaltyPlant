@@ -1,5 +1,7 @@
 package ru.poliscam.bank.web.controllers;
 
+import com.google.common.base.Strings;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +59,9 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		BigDecimal balance;
 
+		if(request.getNumber() == null)
+			return new ErrorStatus("account number is null");
+
 		// Получаем блокировку
 		// Тут спорный момент - нужна ли блокировка на чтение, чтобы получить актуальную запись, если во время запроса
 		// идет изменение баланса
@@ -94,6 +99,9 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		BigDecimal balance = null;
 
+		if(request.getNumber() == null)
+			return new ErrorStatus("account number is null");
+
 		// Получаем блокировку на запись
 		locksService.writeLock(request.getNumber());
 		try {
@@ -130,6 +138,9 @@ public class ProcessingController {
 		long start = System.currentTimeMillis();
 		BigDecimal balance = null;
 
+		if(request.getNumber() == null)
+			return new ErrorStatus("account number is null");
+
 		// Получаем блокировку на запись
 		locksService.writeLock(request.getNumber());
 		try {
@@ -165,6 +176,9 @@ public class ProcessingController {
 	public Object transfer(@RequestBody ProcessingRequest request) {
 		long start = System.currentTimeMillis();
 		BigDecimal balance;
+
+		if(request.getNumber() == null || request.getTo() == null)
+			return new ErrorStatus("account/destination number is null");
 
 		// Получаем блокировку на запись
 		// Т.к. передаем деньги на другой аккаунт, блокируем его тоже
@@ -204,6 +218,9 @@ public class ProcessingController {
 	public Object payments(@RequestBody HistoryRequest request) {
 		long start = System.currentTimeMillis();
 		Collection<Payment> payments;
+
+		if(request.getNumber() == null)
+			return new ErrorStatus("account number is null");
 
 		locksService.readLock(request.getNumber());
 
