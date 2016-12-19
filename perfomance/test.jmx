@@ -32,7 +32,7 @@
         <stringProp name="checkQuery">Select 1</stringProp>
         <stringProp name="connectionAge">5000</stringProp>
         <stringProp name="dataSource">db</stringProp>
-        <stringProp name="dbUrl">jdbc:mysql://test.poliscam.ru/lptest</stringProp>
+        <stringProp name="dbUrl">jdbc:mysql://test.poliscam.ru/lp</stringProp>
         <stringProp name="driver">com.mysql.jdbc.Driver</stringProp>
         <boolProp name="keepAlive">true</boolProp>
         <stringProp name="password">testtesttest</stringProp>
